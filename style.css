@@ -62,6 +62,19 @@ body{
     transform: scale(0.6);
     transition-duration: 0.2s;
 }
+.drag-over-effect div.col:first-child{
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: scale(1.1);
+}
+.drag-over-effect div.col:last-child{
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1);
+}
+
+
+
 .drop-section .cloud-icon{
     margin-top: 25px;
     margin-bottom: 20px;

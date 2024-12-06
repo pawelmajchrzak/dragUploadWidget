@@ -61,5 +61,50 @@ function typeValidation(type){
 
 //upload file function
 function uploadFile(file){
-
+    // //do uploading
+    // console.log(file);
+    listSection.style.display = 'block'
+    var li = document.createElement('li')
+    li.classList.add('in-prog')
+    li.innerHTML = `
+        <div class="col">
+            <img src="icons/${iconSelector(file.type)}" alt="" height="60">
+        </div>
+        <div class="col">
+            <div class="file-name">
+                <div class="name">${file.name}</div>
+                <span>50%</span>
+            </div>
+            <div class="file-progress">
+                <span>0%</span>
+            </div>
+            <div class="file-size">${file.size/(1024*1024).toFixed(2)} MB</div>
+        </div>
+        <div class="col">
+            <svg width="27" height="27" xmlns="http://www.w3.org/2000/svg" class="cross"><path d="M7.56 7.56 L19.44 19.44 M19.44 7.56 L7.56 19.44" fill="none" stroke="red" stroke-width="2.16" stroke-linecap="round" /></svg>
+            <svg width="27" height="27" xmlns="http://www.w3.org/2000/svg" class="tick"><path d="M5.4 13.5 L10.8 18.9 L21.6 8.1" fill="none" stroke="green" stroke-width="2.16" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </div>
+    `
+    listContainer.prepend(li)
+    var http = new XMLHttpRequest()
+    var data = new FormData()
+    data.append('file',file)
+    http.onload = () => {
+        li.classList.add('complete')
+        li.classList.remove('in-prog')
+    }
+    http.upload.onprogress = (e) => {
+        var percent_complete = (e.loaded / e.total)*100
+        li.querySelectorAll('span')[0].innerHTML = Math.round(percent_complete) + '%'
+        li.querySelectorAll('span')[1].style.width = percent_complete + '%'
+    }
+    http.open('POST','sender.php', true)
+    http.send(data)
+    li.querySelector('.cross').onclick = () => http.abort()
+    http.onabort = () => li.remove()
+}
+// find icon for file
+function iconSelector(type){
+    var splitType = (type.split('/')[0] == 'application') ? type.split('/')[1] : type.split('/')[0];
+    return splitType + '.png'
 }

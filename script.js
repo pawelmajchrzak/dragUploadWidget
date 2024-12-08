@@ -8,7 +8,7 @@ const fileSelectorInput = document.querySelector('.file-selector-input')
 fileSelector.onclick = () => fileSelectorInput.click()
 fileSelectorInput.onchange = () => {
     [...fileSelectorInput.files].forEach((file) => {
-        if(typeValidation(file.type)){
+        if(typeValidation(file.type)&&sizeValidation(file.size)){
             // console.log(file);
             uploadFile(file)
         }
@@ -18,7 +18,7 @@ fileSelectorInput.onchange = () => {
 dropArea.ondragover = (e) => {
     e.preventDefault();
     [...e.dataTransfer.items].forEach((item) => {
-        if(typeValidation(item.type)){
+        if(typeValidation(item.type)&&sizeValidation(file.size)){
             dropArea.classList.add('drag-over-effect')
         }
     })
@@ -35,14 +35,14 @@ dropArea.ondrop = (e) => {
         [...e.dataTransfer.items].forEach((item) =>{
             if(item.kind === 'file'){
                 const file = item.getAsFile();
-                if(typeValidation(file.type)){
+                if(typeValidation(file.type)&&sizeValidation(file.size)){
                     uploadFile(file)
                 }
             }
         })
     }else{
         [...e.dataTransfer.files].forEach((file) =>{
-            if(typeValidation(file.type)){
+            if(typeValidation(file.type)&&sizeValidation(file.size)){
                 uploadFile(file)
             }
         })
@@ -54,6 +54,17 @@ function typeValidation(type){
     var splitType = type.split('/')[0]
     if(type == 'application/pdf' || splitType == 'image' || splitType == 'video'){
         return true
+    } else{
+        return true
+    }
+}
+//check size of file
+function sizeValidation(size){
+    const MAX_SIZE = 1073741824; // 1 GB
+    if(size > MAX_SIZE){
+        return false;
+    } else{
+        return true;
     }
 }
 
@@ -140,9 +151,16 @@ function uploadFile(file){
     };
 }
 // find icon for file
-function iconSelector(type){
+function iconSelector(type) {
     var splitType = (type.split('/')[0] == 'application') ? type.split('/')[1] : type.split('/')[0];
-    return splitType + '.png'
+    
+    // Obsługa znanych typów
+    if (splitType === 'image' || splitType === 'pdf' || splitType === 'video') {
+        return splitType + '.png';
+    }
+
+    // Domyślna ikona dla innych typów
+    return 'other.png';
 }
 
 function shortenUrl(url, maxLength) {

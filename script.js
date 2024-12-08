@@ -76,10 +76,10 @@ function uploadFile(file){
                 <span>50%</span>
             </div>
             <div class="file-progress">
-                <span>0%</span>
+                <span></span>
             </div>
             <div class="file-size">${(file.size/(1024*1024)).toFixed(2)} MB</div>
-            <div class="file-link" style="margin-top: 5px;">
+            <div class="file-link" style="margin-top: 5px; display: none">
                 <a href="#" target="_blank">Download</a>
                 <img src="icons/copy.png" alt="" height="15">
             </div>
@@ -112,7 +112,9 @@ function uploadFile(file){
         if (response.success) {
             li.classList.add('complete');
             li.classList.remove('in-prog');
-    
+            
+            const div = li.querySelector('.file-link');
+            div.style.display = 'inline-block';
             // Link
             const link = li.querySelector('a');
             link.href = response.fileUrl;

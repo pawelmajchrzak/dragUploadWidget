@@ -78,7 +78,11 @@ function uploadFile(file){
             <div class="file-progress">
                 <span>0%</span>
             </div>
-            <div class="file-size">${file.size/(1024*1024).toFixed(2)} MB</div>
+            <div class="file-size">${(file.size/(1024*1024)).toFixed(2)} MB</div>
+            <div class="file-link" style="margin-top: 5px;">
+                <a href="#" target="_blank">Download</a>
+                <img src="icons/copy.png" alt="" height="15">
+            </div>
         </div>
         <div class="col">
             <svg width="27" height="27" xmlns="http://www.w3.org/2000/svg" class="cross"><path d="M7.56 7.56 L19.44 19.44 M19.44 7.56 L7.56 19.44" fill="none" stroke="red" stroke-width="2.16" stroke-linecap="round" /></svg>
@@ -102,9 +106,49 @@ function uploadFile(file){
     http.send(data)
     li.querySelector('.cross').onclick = () => http.abort()
     http.onabort = () => li.remove()
+    //onload file link urlss
+    http.onload = () => {
+        const response = JSON.parse(http.responseText); // Odczyt JSON odpowiedzi
+        if (response.success) {
+            li.classList.add('complete');
+            li.classList.remove('in-prog');
+    
+            // Link
+            const link = li.querySelector('a');
+            link.href = response.fileUrl;
+            link.textContent = shortenUrl(response.fileUrl, 30); // Skrócony link
+            link.title = response.fileUrl; // Pełny link jako podpowiedź
+            link.target = '_blank'; // Otwieranie w nowej karcie
+            link.style.marginRight = '8px'; // Odstęp od ikony
+
+            // Ikona "Copy"
+            const copyIcon = li.querySelector('.file-link img');
+            copyIcon.style.cursor = 'pointer'; // Wskazuje, że jest klikalne
+
+            // Obsługa kliknięcia w ikonę
+            copyIcon.onclick = () => {
+                navigator.clipboard.writeText(response.fileUrl)
+                    .then(() => alert('Link skopiowany do schowka!'))
+                    .catch(err => console.error('Błąd kopiowania:', err));
+            };
+
+        } else {
+            console.error('Upload failed:', response.error);
+        }
+    };
 }
 // find icon for file
 function iconSelector(type){
     var splitType = (type.split('/')[0] == 'application') ? type.split('/')[1] : type.split('/')[0];
     return splitType + '.png'
+}
+
+function shortenUrl(url, maxLength) {
+    if (url.length <= maxLength) {
+        return url; // Jeśli URL jest krótszy niż maxLength, zwracamy cały
+    }
+    const partLength = Math.floor((maxLength - 3) / 2); // Dzielimy dostępne miejsce
+    const start = url.substring(0, partLength); // Początek linku
+    const end = url.substring(url.length - partLength); // Koniec linku
+    return `${start}...${end}`; // Zwracamy skrócony URL
 }

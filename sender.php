@@ -13,6 +13,14 @@ if(!empty($_FILES['file'])){
     if(move_uploaded_file($_FILES['file']['tmp_name'],$targetFilePath)){
         //Insert file information in the database
         $insert = $db->query("INSERT INTO files (file_name, uploaded_on) VALUES ('".$filename."', NOW())");
+        // echo $targetFilePath;
+        if($insert){
+            // Return the file URL
+            $fileUrl = 'http://localhost:84/startupTaskDragUploadWidget/' . $targetFilePath; // Replace with your actual domain
+            echo json_encode(['success' => true, 'fileUrl' => $fileUrl]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Database error']);
+        }
     }
 }
 ?>

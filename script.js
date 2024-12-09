@@ -8,8 +8,7 @@ const fileSelectorInput = document.querySelector('.file-selector-input')
 fileSelector.onclick = () => fileSelectorInput.click()
 fileSelectorInput.onchange = () => {
     [...fileSelectorInput.files].forEach((file) => {
-        if(typeValidation(file.type)&&sizeValidation(file.size)){
-            // console.log(file);
+        if (sizeValidation(file.size)) {
             uploadFile(file)
         }
     })
@@ -17,11 +16,7 @@ fileSelectorInput.onchange = () => {
 //when file is over the drag area
 dropArea.ondragover = (e) => {
     e.preventDefault();
-    [...e.dataTransfer.items].forEach((item) => {
-        if(typeValidation(item.type)&&sizeValidation(file.size)){
-            dropArea.classList.add('drag-over-effect')
-        }
-    })
+    dropArea.classList.add('drag-over-effect');
 }
 //when file leave the drag area
 dropArea.ondragleave = () => {
@@ -30,50 +25,34 @@ dropArea.ondragleave = () => {
 //when file drop on the drag area
 dropArea.ondrop = (e) => {
     e.preventDefault();
-    dropArea.classList.remove('drag-over-effect')
-    if(e.dataTransfer.items){
-        [...e.dataTransfer.items].forEach((item) =>{
-            if(item.kind === 'file'){
-                const file = item.getAsFile();
-                if(typeValidation(file.type)&&sizeValidation(file.size)){
-                    uploadFile(file)
-                }
-            }
-        })
-    }else{
-        [...e.dataTransfer.files].forEach((file) =>{
-            if(typeValidation(file.type)&&sizeValidation(file.size)){
-                uploadFile(file)
-            }
-        })
-    }
-}
+    dropArea.classList.remove('drag-over-effect');
 
-//check the file type
-function typeValidation(type){
-    var splitType = type.split('/')[0]
-    if(type == 'application/pdf' || splitType == 'image' || splitType == 'video'){
-        return true
-    } else{
-        return true
+    const items = e.dataTransfer.items || e.dataTransfer.files;
+
+    [...items].forEach(item => {
+        const file = item.kind === 'file' ? item.getAsFile() : item;
+        handleFileUpload(file);
+    });
+};
+
+const handleFileUpload = (file) => {
+    if (sizeValidation(file.size)) {
+        uploadFile(file);
     }
-}
+};
+
 //check size of file
-function sizeValidation(size){
+function sizeValidation(size) {
     const MAX_SIZE = 1073741824; // 1 GB
-    if(size > MAX_SIZE){
+    if (size > MAX_SIZE) {
         return false;
-    } else{
+    } else {
         return true;
     }
 }
 
-
-
 //upload file function
-function uploadFile(file){
-    // //do uploading
-    // console.log(file);
+function uploadFile(file) {
     listSection.style.display = 'block'
     var li = document.createElement('li')
     li.classList.add('in-prog')
@@ -89,7 +68,7 @@ function uploadFile(file){
             <div class="file-progress">
                 <span></span>
             </div>
-            <div class="file-size">${(file.size/(1024*1024)).toFixed(2)} MB</div>
+            <div class="file-size">${(file.size / (1024 * 1024)).toFixed(2)} MB</div>
             <div class="file-link" style="margin-top: 5px; display: none">
                 <a href="#" target="_blank">Download</a>
                 <img src="icons/copy.png" alt="" height="15">
@@ -103,72 +82,78 @@ function uploadFile(file){
     listContainer.prepend(li)
     var http = new XMLHttpRequest()
     var data = new FormData()
-    data.append('file',file)
+    data.append('file', file)
     http.onload = () => {
         li.classList.add('complete')
         li.classList.remove('in-prog')
     }
     http.upload.onprogress = (e) => {
-        var percent_complete = (e.loaded / e.total)*100
+        var percent_complete = (e.loaded / e.total) * 100
         li.querySelectorAll('span')[0].innerHTML = Math.round(percent_complete) + '%'
         li.querySelectorAll('span')[1].style.width = percent_complete + '%'
     }
-    http.open('POST','sender.php', true)
+    http.open('POST', 'sender.php', true)
     http.send(data)
     li.querySelector('.cross').onclick = () => http.abort()
     http.onabort = () => li.remove()
-    //onload file link urlss
     http.onload = () => {
-        const response = JSON.parse(http.responseText); // Odczyt JSON odpowiedzi
-        if (response.success) {
-            li.classList.add('complete');
-            li.classList.remove('in-prog');
-            
-            const div = li.querySelector('.file-link');
-            div.style.display = 'inline-block';
-            // Link
-            const link = li.querySelector('a');
-            link.href = response.fileUrl;
-            link.textContent = shortenUrl(response.fileUrl, 30); // Skrócony link
-            link.title = response.fileUrl; // Pełny link jako podpowiedź
-            link.target = '_blank'; // Otwieranie w nowej karcie
-            link.style.marginRight = '8px'; // Odstęp od ikony
-
-            // Ikona "Copy"
-            const copyIcon = li.querySelector('.file-link img');
-            copyIcon.style.cursor = 'pointer'; // Wskazuje, że jest klikalne
-
-            // Obsługa kliknięcia w ikonę
-            copyIcon.onclick = () => {
-                navigator.clipboard.writeText(response.fileUrl)
-                    .then(() => alert('Link skopiowany do schowka!'))
-                    .catch(err => console.error('Błąd kopiowania:', err));
-            };
-
-        } else {
-            console.error('Upload failed:', response.error);
+        try {
+            const response = JSON.parse(http.responseText);
+            if (response.success) {
+                updateFileStatus(li, response.fileUrl);
+            } else {
+                console.error('Upload failed:', response.error);
+            }
+        } catch (error) {
+            console.error('Error parsing response:', error);
         }
     };
 }
-// find icon for file
-function iconSelector(type) {
-    var splitType = (type.split('/')[0] == 'application') ? type.split('/')[1] : type.split('/')[0];
-    
-    // Obsługa znanych typów
-    if (splitType === 'image' || splitType === 'pdf' || splitType === 'video') {
-        return splitType + '.png';
-    }
 
-    // Domyślna ikona dla innych typów
+//find icon for file
+function iconSelector(type) {
+    const splitType = type.split('/')[1] || type.split('/')[0];
+    const supportedTypes = ['image', 'pdf', 'video'];
+    if (supportedTypes.includes(splitType)) {
+        return `${splitType}.png`;
+    }
     return 'other.png';
 }
 
 function shortenUrl(url, maxLength) {
     if (url.length <= maxLength) {
-        return url; // Jeśli URL jest krótszy niż maxLength, zwracamy cały
+        return url;
     }
-    const partLength = Math.floor((maxLength - 3) / 2); // Dzielimy dostępne miejsce
-    const start = url.substring(0, partLength); // Początek linku
-    const end = url.substring(url.length - partLength); // Koniec linku
-    return `${start}...${end}`; // Zwracamy skrócony URL
+    const partLength = Math.floor((maxLength - 3) / 2);
+    const start = url.substring(0, partLength);
+    const end = url.substring(url.length - partLength);
+    return `${start}...${end}`;
+}
+
+function updateFileStatus(li, fileUrl) {
+    li.classList.add('complete');
+    li.classList.remove('in-prog');
+    const div = li.querySelector('.file-link');
+    div.style.display = 'inline-block';
+    const link = li.querySelector('a');
+    setLinkAttributes(link, fileUrl);
+    const copyIcon = li.querySelector('.file-link img');
+    setCopyIcon(copyIcon, fileUrl);
+}
+
+function setLinkAttributes(link, fileUrl) {
+    link.href = fileUrl;
+    link.textContent = shortenUrl(fileUrl, 40);
+    link.title = fileUrl;
+    link.target = '_blank';
+    link.style.marginRight = '8px';
+}
+
+function setCopyIcon(copyIcon, fileUrl) {
+    copyIcon.style.cursor = 'pointer';
+    copyIcon.onclick = () => {
+        navigator.clipboard.writeText(fileUrl)
+            .then(() => alert('Link skopiowany do schowka!'))
+            .catch(err => console.error('Błąd kopiowania:', err));
+    };
 }
